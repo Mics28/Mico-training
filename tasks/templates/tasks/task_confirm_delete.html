@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Delete Task</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background: #f0f2f5;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        .confirm-card {
+            background: white;
+            border-radius: 12px;
+            padding: 2.5rem;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+            max-width: 440px;
+            width: 100%;
+            text-align: center;
+        }
+
+        .icon    { font-size: 3rem; margin-bottom: 1rem; }
+
+        h2 {
+            font-size: 1.4rem;
+            color: #1a1a2e;
+            margin-bottom: 0.75rem;
+        }
+
+        p {
+            color: #718096;
+            margin-bottom: 2rem;
+            font-size: 0.95rem;
+            line-height: 1.5;
+        }
+
+        p strong { color: #1a1a2e; }
+
+        .form-actions {
+            display: flex;
+            gap: 0.75rem;
+            justify-content: center;
+        }
+
+        .btn-danger {
+            padding: 0.75rem 1.5rem;
+            background: #e53e3e;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .btn-danger:hover { background: #c53030; }
+
+        .btn-secondary {
+            padding: 0.75rem 1.5rem;
+            background: #f7fafc;
+            color: #4a5568;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            text-decoration: none;
+            transition: all 0.2s;
+        }
+
+        .btn-secondary:hover { background: #edf2f7; }
+    </style>
+</head>
+<body>
+
+<div class="confirm-card">
+    <div class="icon">🗑️</div>
+    <h2>Delete Task?</h2>
+    <p>
+        Are you sure you want to delete<br>
+        <strong>"{{ object.title }}"</strong>?<br>
+        This action cannot be undone.
+    </p>
+
+    <div class="form-actions">
+        <form method="POST">
+            {% csrf_token %}
+            <button type="submit" class="btn-danger">Yes, Delete</button>
+        </form>
+        <a href="{% url 'tasks:task_list' %}" class="btn-secondary">Cancel</a>
+    </div>
+</div>
+
+</body>
+</html>

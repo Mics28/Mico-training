@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Categories</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background: #f0f2f5;
+            min-height: 100vh;
+        }
+
+        .navbar {
+            background: #1a1a2e;
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .navbar-brand {
+            color: white;
+            font-size: 1.25rem;
+            font-weight: 700;
+            text-decoration: none;
+        }
+
+        .navbar-link {
+            color: #a0aec0;
+            text-decoration: none;
+            font-size: 0.875rem;
+        }
+
+        .navbar-link:hover { color: white; }
+
+        .container {
+            max-width: 640px;
+            margin: 2rem auto;
+            padding: 0 1rem;
+        }
+
+        .messages { margin-bottom: 1rem; }
+
+        .message {
+            padding: 0.75rem 1rem;
+            border-radius: 8px;
+            font-size: 0.875rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .message.success { background: #d4edda; color: #155724; }
+        .message.error   { background: #f8d7da; color: #721c24; }
+
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 1.5rem;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+            margin-bottom: 1.5rem;
+        }
+
+        .card-title {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: #1a1a2e;
+            margin-bottom: 1.25rem;
+        }
+
+        .form-row {
+            display: flex;
+            gap: 0.75rem;
+        }
+
+        .form-control {
+            flex: 1;
+            padding: 0.75rem 1rem;
+            border: 2px solid #e1e5e9;
+            border-radius: 8px;
+            font-size: 1rem;
+            outline: none;
+            transition: border-color 0.2s;
+            font-family: inherit;
+        }
+
+        .form-control:focus { border-color: #4f46e5; }
+
+        .btn-primary {
+            padding: 0.75rem 1.25rem;
+            background: #4f46e5;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: background 0.2s;
+        }
+
+        .btn-primary:hover { background: #4338ca; }
+
+        .errorlist {
+            list-style: none;
+            color: #dc3545;
+            font-size: 0.8rem;
+            margin-top: 0.4rem;
+        }
+
+        /* Category Items */
+        .category-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.85rem 1rem;
+            border-radius: 8px;
+            background: #f7fafc;
+            margin-bottom: 0.5rem;
+            border-left: 3px solid #4f46e5;
+        }
+
+        .category-name {
+            font-weight: 600;
+            color: #2d3748;
+        }
+
+        .category-count {
+            font-size: 0.78rem;
+            color: #a0aec0;
+            margin-top: 0.15rem;
+        }
+
+        .btn-delete {
+            background: #fff5f5;
+            color: #e53e3e;
+            border: none;
+            padding: 0.35rem 0.75rem;
+            border-radius: 6px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .btn-delete:hover { background: #fed7d7; }
+
+        .empty-state {
+            text-align: center;
+            padding: 2rem;
+            color: #a0aec0;
+        }
+    </style>
+</head>
+<body>
+
+<nav class="navbar">
+    <a href="{% url 'tasks:task_list' %}" class="navbar-brand">📝 Task Manager</a>
+    <a href="{% url 'tasks:task_list' %}" class="navbar-link">← Back to Tasks</a>
+</nav>
+
+<div class="container">
+
+    {% if messages %}
+        <div class="messages">
+            {% for message in messages %}
+                <div class="message {{ message.tags }}">{{ message }}</div>
+            {% endfor %}
+        </div>
+    {% endif %}
+
+    <!-- Add Category Form -->
+    <div class="card">
+        <h2 class="card-title">🏷️ Add New Category</h2>
+        <form method="POST" action="{% url 'tasks:category_create' %}">
+            {% csrf_token %}
+            <div class="form-row">
+                {{ form.name }}
+                <button type="submit" class="btn-primary">Add</button>
+            </div>
+            {% if form.name.errors %}
+                <ul class="errorlist">
+                    {% for error in form.name.errors %}
+                        <li>{{ error }}</li>
+                    {% endfor %}
+                </ul>
+            {% endif %}
+        </form>
+    </div>
+
+    <!-- Category List -->
+    <div class="card">
+        <h2 class="card-title">📂 Your Categories</h2>
+
+        {% if categories %}
+            {% for category in categories %}
+                <div class="category-item">
+                    <div>
+                        <div class="category-name">{{ category.name }}</div>
+                        <div class="category-count">
+                            {{ category.tasks.count }} task{{ category.tasks.count|pluralize }}
+                        </div>
+                    </div>
+                    <form method="POST" action="{% url 'tasks:category_delete' category.pk %}">
+                        {% csrf_token %}
+                        <button type="submit" class="btn-delete">🗑 Delete</button>
+                    </form>
+                </div>
+            {% endfor %}
+        {% else %}
+            <div class="empty-state">No categories yet. Add one above!</div>
+        {% endif %}
+    </div>
+
+</div>
+</body>
+</html>

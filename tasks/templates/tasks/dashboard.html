@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background: #f0f2f5;
+            min-height: 100vh;
+        }
+
+        /* Navbar */
+        .navbar {
+            background: #1a1a2e;
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .navbar-brand {
+            color: white;
+            font-size: 1.25rem;
+            font-weight: 700;
+            text-decoration: none;
+        }
+        .navbar-right {
+            display: flex;
+            align-items: center;
+            gap: 1.25rem;
+        }
+        .navbar-link {
+            color: #a0aec0;
+            text-decoration: none;
+            font-size: 0.875rem;
+        }
+        .navbar-link:hover, .navbar-link.active { color: white; }
+        .navbar-user { color: #a0aec0; font-size: 0.875rem; }
+        .btn-logout {
+            background: transparent;
+            border: 1px solid #4a5568;
+            color: #a0aec0;
+            padding: 0.4rem 0.9rem;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.875rem;
+            transition: all 0.2s;
+        }
+        .btn-logout:hover { background: #4a5568; color: white; }
+
+        .container {
+            max-width: 1000px;
+            margin: 2rem auto;
+            padding: 0 1rem;
+        }
+
+        .page-title {
+            font-size: 1.6rem;
+            font-weight: 700;
+            color: #1a1a2e;
+            margin-bottom: 1.5rem;
+        }
+
+        /* Stat Cards */
+        .stat-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .stat-card {
+            background: white;
+            border-radius: 12px;
+            padding: 1.25rem 1.5rem;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+            border-top: 4px solid #e2e8f0;
+        }
+
+        .stat-card.total       { border-top-color: #4f46e5; }
+        .stat-card.todo        { border-top-color: #a0aec0; }
+        .stat-card.in-progress { border-top-color: #ed8936; }
+        .stat-card.done        { border-top-color: #48bb78; }
+
+        .stat-number {
+            font-size: 2.2rem;
+            font-weight: 800;
+            color: #1a1a2e;
+            line-height: 1;
+        }
+
+        .stat-label {
+            font-size: 0.8rem;
+            color: #a0aec0;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-top: 0.4rem;
+        }
+
+        /* Completion Bar */
+        .completion-card {
+            background: white;
+            border-radius: 12px;
+            padding: 1.25rem 1.5rem;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+            margin-bottom: 1.5rem;
+        }
+
+        .completion-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 0.75rem;
+        }
+
+        .completion-label {
+            font-weight: 700;
+            color: #1a1a2e;
+            font-size: 0.95rem;
+        }
+
+        .completion-pct {
+            font-weight: 800;
+            color: #4f46e5;
+        }
+
+        .progress-bar-bg {
+            background: #e2e8f0;
+            border-radius: 99px;
+            height: 12px;
+            overflow: hidden;
+        }
+
+        .progress-bar-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #4f46e5, #7c3aed);
+            border-radius: 99px;
+            transition: width 0.6s ease;
+        }
+
+        /* Charts */
+        .charts-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        @media (max-width: 640px) {
+            .charts-grid { grid-template-columns: 1fr; }
+        }
+
+        .chart-card {
+            background: white;
+            border-radius: 12px;
+            padding: 1.25rem;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+        }
+
+        .chart-title {
+            font-weight: 700;
+            color: #1a1a2e;
+            font-size: 0.95rem;
+            margin-bottom: 1rem;
+        }
+
+        /* Task Sections */
+        .section-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        @media (max-width: 640px) {
+            .section-grid { grid-template-columns: 1fr; }
+        }
+
+        .section-card {
+            background: white;
+            border-radius: 12px;
+            padding: 1.25rem;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+        }
+
+        .section-title {
+            font-weight: 700;
+            color: #1a1a2e;
+            font-size: 0.95rem;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+        }
+
+        .task-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.6rem 0;
+            border-bottom: 1px solid #f7fafc;
+            font-size: 0.875rem;
+        }
+
+        .task-row:last-child { border-bottom: none; }
+
+        .task-row-title {
+            color: #2d3748;
+            font-weight: 500;
+            flex: 1;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            margin-right: 0.75rem;
+        }
+
+        .task-row-date {
+            font-size: 0.75rem;
+            color: #a0aec0;
+            white-space: nowrap;
+        }
+
+        .task-row-date.overdue { color: #e53e3e; font-weight: 600; }
+        .task-row-date.soon    { color: #d97706; font-weight: 600; }
+
+        .empty-note {
+            color: #a0aec0;
+            font-size: 0.875rem;
+            text-align: center;
+            padding: 1rem 0;
+        }
+
+        /* Category Table */
+        .category-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.875rem;
+        }
+
+        .category-table th {
+            text-align: left;
+            color: #a0aec0;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            padding-bottom: 0.5rem;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .category-table td {
+            padding: 0.6rem 0;
+            border-bottom: 1px solid #f7fafc;
+            color: #2d3748;
+        }
+
+        .mini-bar-bg {
+            background: #e2e8f0;
+            border-radius: 99px;
+            height: 6px;
+            width: 80px;
+            overflow: hidden;
+        }
+
+        .mini-bar-fill {
+            height: 100%;
+            background: #4f46e5;
+            border-radius: 99px;
+        }
+    </style>
+</head>
+<body>
+
+<nav class="navbar">
+    <a href="{% url 'tasks:task_list' %}" class="navbar-brand">📝 Task Manager</a>
+    <div class="navbar-right">
+        <a href="{% url 'tasks:dashboard' %}"     class="navbar-link active">📊 Dashboard</a>
+        <a href="{% url 'tasks:task_list' %}"     class="navbar-link">📋 Tasks</a>
+        <a href="{% url 'tasks:category_list' %}" class="navbar-link">🏷️ Categories</a>
+        <span class="navbar-user">👤 {{ request.user.username }}</span>
+        <form method="POST" action="{% url 'accounts:logout' %}">
+            {% csrf_token %}
+            <button type="submit" class="btn-logout">Logout</button>
+        </form>
+    </div>
+</nav>
+
+<div class="container">
+
+    <h1 class="page-title">📊 Dashboard</h1>
+
+    <!-- Stat Cards -->
+    <div class="stat-grid">
+        <div class="stat-card total">
+            <div class="stat-number">{{ total_tasks }}</div>
+            <div class="stat-label">Total Tasks</div>
+        </div>
+        <div class="stat-card todo">
+            <div class="stat-number">{{ todo_count }}</div>
+            <div class="stat-label">To Do</div>
+        </div>
+        <div class="stat-card in-progress">
+            <div class="stat-number">{{ in_progress_count }}</div>
+            <div class="stat-label">In Progress</div>
+        </div>
+        <div class="stat-card done">
+            <div class="stat-number">{{ done_count }}</div>
+            <div class="stat-label">Done</div>
+        </div>
+    </div>
+
+    <!-- Completion Rate -->
+    <div class="completion-card">
+        <div class="completion-header">
+            <span class="completion-label">Overall Completion Rate</span>
+            <span class="completion-pct">{{ completion_rate }}%</span>
+        </div>
+        <div class="progress-bar-bg">
+            <div class="progress-bar-fill" style="width: {{ completion_rate }}%"></div>
+        </div>
+    </div>
+
+    <!-- Charts -->
+    <div class="charts-grid">
+        <div class="chart-card">
+            <div class="chart-title">📈 Tasks by Status</div>
+            <canvas id="statusChart"></canvas>
+        </div>
+        <div class="chart-card">
+            <div class="chart-title">🎯 Tasks by Priority</div>
+            <canvas id="priorityChart"></canvas>
+        </div>
+    </div>
+
+    <!-- Overdue + Due This Week -->
+    <div class="section-grid">
+
+        <div class="section-card">
+            <div class="section-title">⚠️ Overdue Tasks</div>
+            {% if overdue_tasks %}
+                {% for task in overdue_tasks %}
+                    <div class="task-row">
+                        <span class="task-row-title">{{ task.title }}</span>
+                        <span class="task-row-date overdue">
+                            {{ task.due_date|date:"M d" }}
+                        </span>
+                    </div>
+                {% endfor %}
+            {% else %}
+                <div class="empty-note">🎉 No overdue tasks!</div>
+            {% endif %}
+        </div>
+
+        <div class="section-card">
+            <div class="section-title">📅 Due This Week</div>
+            {% if due_this_week %}
+                {% for task in due_this_week %}
+                    <div class="task-row">
+                        <span class="task-row-title">{{ task.title }}</span>
+                        <span class="task-row-date soon">
+                            {{ task.due_date|date:"M d" }}
+                        </span>
+                    </div>
+                {% endfor %}
+            {% else %}
+                <div class="empty-note">✅ Nothing due this week!</div>
+            {% endif %}
+        </div>
+
+    </div>
+
+    <!-- Category Breakdown -->
+    {% if category_stats %}
+    <div class="section-card" style="margin-bottom: 2rem;">
+        <div class="section-title">📂 Tasks by Category</div>
+        <table class="category-table">
+            <thead>
+                <tr>
+                    <th>Category</th>
+                    <th>Total</th>
+                    <th>Done</th>
+                    <th>Progress</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for cat in category_stats %}
+                <tr>
+                    <td>{{ cat.name }}</td>
+                    <td>{{ cat.total }}</td>
+                    <td>{{ cat.done }}</td>
+                    <td>
+                        <div class="mini-bar-bg">
+                            <div class="mini-bar-fill" style="width: {% if cat.total > 0 %}{% widthratio cat.done cat.total 100 %}{% else %}0{% endif %}%"></div>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% endif %}
+
+</div>
+
+<!-- Chart.js Scripts -->
+<script>
+    // Status Doughnut Chart
+    const statusCtx = document.getElementById('statusChart').getContext('2d');
+    new Chart(statusCtx, {
+        type: 'doughnut',
+        data: {
+            labels: ['To Do', 'In Progress', 'Done'],
+            datasets: [{
+                data: {{ chart_status|safe }},
+                backgroundColor: ['#4f46e5', '#ed8936', '#48bb78'],
+                borderWidth: 0,
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: { position: 'bottom' }
+            }
+        }
+    });
+
+    // Priority Bar Chart
+    const priorityCtx = document.getElementById('priorityChart').getContext('2d');
+    new Chart(priorityCtx, {
+        type: 'bar',
+        data: {
+            labels: ['High', 'Medium', 'Low'],
+            datasets: [{
+                label: 'Tasks',
+                data: {{ chart_priority|safe }},
+                backgroundColor: ['#e53e3e', '#ed8936', '#48bb78'],
+                borderRadius: 6,
+                borderWidth: 0,
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: { legend: { display: false } },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: { stepSize: 1 }
+                }
+            }
+        }
+    });
+</script>
+
+</body>
+</html>

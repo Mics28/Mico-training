@@ -4,6 +4,9 @@ from django.urls import reverse_lazy
 from django.contrib import messages
 from .models import Task, Category
 from .forms import TaskForm, CategoryForm
+from django.db.models import Count, Q
+from django.utils import timezone
+import datetime
 
 
 # ─────────────────────────────────────────
@@ -152,3 +155,73 @@ class CategoryDeleteView(LoginRequiredMixin, DeleteView):
     def form_valid(self, form):
         messages.success(self.request, 'Category deleted.')
         return super().form_valid(form)
+    
+class DashboardView(LoginRequiredMixin, ListView):
+    model               = Task
+    template_name       = 'tasks/dashboard.html'
+    context_object_name = 'tasks'
+
+    def get_queryset(self):
+        return Task.objects.filter(user=self.request.user)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        user     = self.request.user
+        today    = timezone.now().date()
+        all_tasks = Task.objects.filter(user=user)
+
+        # ── Status counts ──────────────────────────────
+        context['total_tasks']       = all_tasks.count()
+        context['todo_count']        = all_tasks.filter(status='todo').count()
+        context['in_progress_count'] = all_tasks.filter(status='in_progress').count()
+        context['done_count']        = all_tasks.filter(status='done').count()
+
+        # ── Priority counts ────────────────────────────
+        context['high_count']   = all_tasks.filter(priority='high').count()
+        context['medium_count'] = all_tasks.filter(priority='medium').count()
+        context['low_count']    = all_tasks.filter(priority='low').count()
+
+        # ── Completion rate ────────────────────────────
+        total = all_tasks.count()
+        context['completion_rate'] = (
+            round((context['done_count'] / total) * 100)
+            if total > 0 else 0
+        )
+
+        # ── Overdue tasks ──────────────────────────────
+        context['overdue_tasks'] = all_tasks.filter(
+            due_date__lt=today,
+            status__in=['todo', 'in_progress']
+        )
+
+        # ── Due this week ──────────────────────────────
+        week_end = today + datetime.timedelta(days=7)
+        context['due_this_week'] = all_tasks.filter(
+            due_date__gte=today,
+            due_date__lte=week_end,
+            status__in=['todo', 'in_progress']
+        )
+
+        # ── Category breakdown ─────────────────────────
+        context['category_stats'] = (
+            Category.objects
+            .filter(user=user)
+            .annotate(
+                total=Count('tasks'),
+                done=Count('tasks', filter=Q(tasks__status='done'))
+            )
+        )
+
+        # ── Chart data (passed as plain numbers for JS) ─
+        context['chart_status'] = [
+            context['todo_count'],
+            context['in_progress_count'],
+            context['done_count'],
+        ]
+        context['chart_priority'] = [
+            context['high_count'],
+            context['medium_count'],
+            context['low_count'],
+        ]
+
+        return context

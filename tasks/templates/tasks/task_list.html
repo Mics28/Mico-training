@@ -296,6 +296,7 @@
     <div class="navbar-right">
         <a href="{% url 'tasks:dashboard' %}"     class="navbar-link">📊 Dashboard</a>
         <a href="{% url 'tasks:category_list' %}" class="navbar-link">🏷️ Categories</a>
+        <a href="{% url 'tasks:kanban' %}" class="navbar-link">🗂️ Kanban</a>
         <span class="navbar-user">👤 {{ request.user.username }}</span>
         <form method="POST" action="{% url 'accounts:logout' %}">
             {% csrf_token %}

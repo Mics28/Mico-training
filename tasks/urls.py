@@ -6,7 +6,11 @@ app_name = 'tasks'
 urlpatterns = [
     # Dashboard
     path('dashboard/', views.DashboardView.as_view(), name='dashboard'),
-
+   
+    # Kanban
+    path('kanban/', views.KanbanView.as_view(), name='kanban'),
+    path('kanban/<int:pk>/update-status/', views.TaskUpdateStatusAjaxView.as_view(), name='task_update_status'),
+    
     # Task URLs
     path('',                 views.TaskListView.as_view(),   name='task_list'),
     path('create/',          views.TaskCreateView.as_view(), name='task_create'),

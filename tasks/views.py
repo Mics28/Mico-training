@@ -6,6 +6,11 @@ from .models import Task, Category
 from .forms import TaskForm, CategoryForm
 from django.db.models import Count, Q
 from django.utils import timezone
+from django.http import JsonResponse
+from django.views import View
+from django.views.decorators.csrf import csrf_exempt
+from django.utils.decorators import method_decorator
+import json
 import datetime
 
 
@@ -235,3 +240,46 @@ class DashboardView(LoginRequiredMixin, ListView):
         ]
 
         return context
+    
+class KanbanView(LoginRequiredMixin, ListView):
+    model               = Task
+    template_name       = 'tasks/kanban.html'
+    context_object_name = 'tasks'
+
+    def get_queryset(self):
+        return Task.objects.filter(user=self.request.user)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        tasks = self.get_queryset()
+
+        # Split tasks into 3 buckets for the 3 columns
+        context['todo_tasks']        = tasks.filter(status='todo')
+        context['in_progress_tasks'] = tasks.filter(status='in_progress')
+        context['done_tasks']        = tasks.filter(status='done')
+        return context
+
+
+class TaskUpdateStatusAjaxView(LoginRequiredMixin, View):
+
+    def post(self, request, pk):
+        try:
+            task = Task.objects.get(pk=pk, user=request.user)
+        except Task.DoesNotExist:
+            return JsonResponse({'success': False, 'error': 'Task not found'}, status=404)
+
+        data       = json.loads(request.body)
+        new_status = data.get('status')
+
+        valid_statuses = ['todo', 'in_progress', 'done']
+        if new_status not in valid_statuses:
+            return JsonResponse({'success': False, 'error': 'Invalid status'}, status=400)
+
+        task.status = new_status
+        task.save()
+
+        return JsonResponse({
+            'success': True,
+            'task_id': task.id,
+            'new_status': task.status,
+        })

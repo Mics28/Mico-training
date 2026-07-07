@@ -1,0 +1,17 @@
+<div class="kanban-card priority-{{ task.priority }}"
+     draggable="true"
+     data-task-id="{{ task.pk }}">
+
+    <div class="card-title">{{ task.title }}</div>
+
+    <div class="card-meta">
+        <span class="badge badge-{{ task.priority }}">{{ task.get_priority_display }}</span>
+        {% if task.category %}
+            <span class="badge badge-category">{{ task.category.name }}</span>
+        {% endif %}
+    </div>
+
+    {% if task.due_date %}
+        <div class="card-due">📅 {{ task.due_date|date:"M d" }}</div>
+    {% endif %}
+</div>

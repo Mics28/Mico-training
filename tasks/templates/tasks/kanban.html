@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kanban Board</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background: #f0f2f5;
+            min-height: 100vh;
+        }
+
+        /* Navbar */
+        .navbar {
+            background: #1a1a2e;
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .navbar-brand { color: white; font-size: 1.25rem; font-weight: 700; text-decoration: none; }
+        .navbar-right { display: flex; align-items: center; gap: 1.25rem; }
+        .navbar-link { color: #a0aec0; text-decoration: none; font-size: 0.875rem; }
+        .navbar-link:hover, .navbar-link.active { color: white; }
+        .navbar-user { color: #a0aec0; font-size: 0.875rem; }
+        .btn-logout {
+            background: transparent; border: 1px solid #4a5568; color: #a0aec0;
+            padding: 0.4rem 0.9rem; border-radius: 6px; cursor: pointer;
+            font-size: 0.875rem; transition: all 0.2s;
+        }
+        .btn-logout:hover { background: #4a5568; color: white; }
+
+        .container {
+            max-width: 1100px;
+            margin: 2rem auto;
+            padding: 0 1rem;
+        }
+
+        .page-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .page-title { font-size: 1.6rem; font-weight: 700; color: #1a1a2e; }
+
+        .btn-primary {
+            background: #4f46e5; color: white; padding: 0.65rem 1.25rem;
+            border-radius: 8px; text-decoration: none; font-weight: 600;
+            font-size: 0.9rem; transition: background 0.2s;
+        }
+        .btn-primary:hover { background: #4338ca; }
+
+        /* Toast notification */
+        #toast {
+            position: fixed;
+            top: 1.5rem;
+            right: 1.5rem;
+            background: #1a1a2e;
+            color: white;
+            padding: 0.75rem 1.25rem;
+            border-radius: 8px;
+            font-size: 0.875rem;
+            opacity: 0;
+            transform: translateY(-10px);
+            transition: all 0.3s ease;
+            pointer-events: none;
+            z-index: 999;
+        }
+        #toast.show { opacity: 1; transform: translateY(0); }
+
+        /* Kanban Board */
+        .board {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1.25rem;
+        }
+
+        @media (max-width: 800px) {
+            .board { grid-template-columns: 1fr; }
+        }
+
+        .column {
+            background: #e9ecf3;
+            border-radius: 12px;
+            padding: 1rem;
+            min-height: 500px;
+            transition: background 0.2s;
+        }
+
+        .column.drag-over {
+            background: #d6dcf0;
+        }
+
+        .column-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+            padding: 0 0.25rem;
+        }
+
+        .column-title {
+            font-weight: 700;
+            font-size: 0.9rem;
+            color: #2d3748;
+            text-transform: uppercase;
+            letter-spacing: 0.03em;
+        }
+
+        .column-count {
+            background: white;
+            color: #4a5568;
+            font-size: 0.75rem;
+            font-weight: 700;
+            padding: 0.15rem 0.55rem;
+            border-radius: 99px;
+        }
+
+        .column-todo .column-title        { color: #4f46e5; }
+        .column-in_progress .column-title { color: #d97706; }
+        .column-done .column-title        { color: #38a169; }
+
+        /* Task Card */
+        .kanban-card {
+            background: white;
+            border-radius: 10px;
+            padding: 1rem;
+            margin-bottom: 0.75rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+            cursor: grab;
+            border-left: 4px solid #e2e8f0;
+            transition: box-shadow 0.2s, transform 0.15s;
+        }
+
+        .kanban-card:hover {
+            box-shadow: 0 4px 14px rgba(0,0,0,0.12);
+        }
+
+        .kanban-card.dragging {
+            opacity: 0.4;
+            cursor: grabbing;
+        }
+
+        .kanban-card.priority-high   { border-left-color: #e53e3e; }
+        .kanban-card.priority-medium { border-left-color: #d97706; }
+        .kanban-card.priority-low    { border-left-color: #38a169; }
+
+        .card-title {
+            font-weight: 600;
+            color: #1a1a2e;
+            font-size: 0.9rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .card-meta {
+            display: flex;
+            gap: 0.4rem;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .badge {
+            font-size: 0.68rem;
+            font-weight: 700;
+            padding: 0.15rem 0.5rem;
+            border-radius: 20px;
+        }
+
+        .badge-high   { background: #fff5f5; color: #e53e3e; }
+        .badge-medium { background: #fef3c7; color: #d97706; }
+        .badge-low    { background: #f0fff4; color: #38a169; }
+        .badge-category { background: #f0f0ff; color: #6b46c1; }
+
+        .card-due {
+            font-size: 0.72rem;
+            color: #a0aec0;
+            margin-top: 0.4rem;
+        }
+
+        .empty-column {
+            text-align: center;
+            color: #a0aec0;
+            font-size: 0.8rem;
+            padding: 2rem 0.5rem;
+            border: 2px dashed #cbd5e0;
+            border-radius: 8px;
+        }
+    </style>
+</head>
+<body>
+
+<nav class="navbar">
+    <a href="{% url 'tasks:task_list' %}" class="navbar-brand">📝 Task Manager</a>
+    <div class="navbar-right">
+        <a href="{% url 'tasks:dashboard' %}"     class="navbar-link">📊 Dashboard</a>
+        <a href="{% url 'tasks:task_list' %}"     class="navbar-link">📋 Tasks</a>
+        <a href="{% url 'tasks:kanban' %}"        class="navbar-link active">🗂️ Kanban</a>
+        <a href="{% url 'tasks:category_list' %}" class="navbar-link">🏷️ Categories</a>
+        <span class="navbar-user">👤 {{ request.user.username }}</span>
+        <form method="POST" action="{% url 'accounts:logout' %}">
+            {% csrf_token %}
+            <button type="submit" class="btn-logout">Logout</button>
+        </form>
+    </div>
+</nav>
+
+<div class="container">
+    <div class="page-header">
+        <h1 class="page-title">🗂️ Kanban Board</h1>
+        <a href="{% url 'tasks:task_create' %}" class="btn-primary">+ New Task</a>
+    </div>
+
+    <div class="board">
+
+        <!-- TO DO Column -->
+        <div class="column column-todo" data-status="todo">
+            <div class="column-header">
+                <span class="column-title">To Do</span>
+                <span class="column-count">{{ todo_tasks|length }}</span>
+            </div>
+            <div class="card-list" id="list-todo">
+                {% for task in todo_tasks %}
+                    {% include 'tasks/_kanban_card.html' %}
+                {% empty %}
+                    <div class="empty-column">No tasks</div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- IN PROGRESS Column -->
+        <div class="column column-in_progress" data-status="in_progress">
+            <div class="column-header">
+                <span class="column-title">In Progress</span>
+                <span class="column-count">{{ in_progress_tasks|length }}</span>
+            </div>
+            <div class="card-list" id="list-in_progress">
+                {% for task in in_progress_tasks %}
+                    {% include 'tasks/_kanban_card.html' %}
+                {% empty %}
+                    <div class="empty-column">No tasks</div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- DONE Column -->
+        <div class="column column-done" data-status="done">
+            <div class="column-header">
+                <span class="column-title">Done</span>
+                <span class="column-count">{{ done_tasks|length }}</span>
+            </div>
+            <div class="card-list" id="list-done">
+                {% for task in done_tasks %}
+                    {% include 'tasks/_kanban_card.html' %}
+                {% empty %}
+                    <div class="empty-column">No tasks</div>
+                {% endfor %}
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+    // ─────────────────────────────────────────────
+    // Helper: read the CSRF token from the hidden input
+    // ─────────────────────────────────────────────
+    function getCsrfToken() {
+        return document.querySelector('[name=csrfmiddlewaretoken]').value;
+    }
+
+    // ─────────────────────────────────────────────
+    // Toast notification helper
+    // ─────────────────────────────────────────────
+    function showToast(message) {
+        const toast = document.getElementById('toast');
+        toast.textContent = message;
+        toast.classList.add('show');
+        setTimeout(() => toast.classList.remove('show'), 2000);
+    }
+
+    // ─────────────────────────────────────────────
+    // Drag and Drop Logic
+    // ─────────────────────────────────────────────
+    let draggedCard = null;
+
+    // Attach drag events to every card
+    document.querySelectorAll('.kanban-card').forEach(card => {
+        card.addEventListener('dragstart', (e) => {
+            draggedCard = card;
+            card.classList.add('dragging');
+        });
+
+        card.addEventListener('dragend', () => {
+            card.classList.remove('dragging');
+            draggedCard = null;
+        });
+    });
+
+    // Attach drop events to every column
+    document.querySelectorAll('.column').forEach(column => {
+
+        // Fires continuously while dragging over the column
+        column.addEventListener('dragover', (e) => {
+            e.preventDefault();           // required to allow dropping
+            column.classList.add('drag-over');
+        });
+
+        // Fires when the dragged card leaves the column
+        column.addEventListener('dragleave', () => {
+            column.classList.remove('drag-over');
+        });
+
+        // Fires when the card is dropped
+        column.addEventListener('drop', (e) => {
+            e.preventDefault();
+            column.classList.remove('drag-over');
+
+            if (!draggedCard) return;
+
+            const newStatus = column.dataset.status;
+            const taskId    = draggedCard.dataset.taskId;
+            const cardList  = column.querySelector('.card-list');
+
+            // Move the card visually right away (optimistic update)
+            cardList.appendChild(draggedCard);
+
+            // Remove "No tasks" placeholder if a card was dropped in
+            const emptyMsg = cardList.querySelector('.empty-column');
+            if (emptyMsg) emptyMsg.remove();
+
+            // Send the update to Django in the background
+            updateTaskStatus(taskId, newStatus);
+        });
+    });
+
+    // ─────────────────────────────────────────────
+    // AJAX call to Django
+    // ─────────────────────────────────────────────
+    function updateTaskStatus(taskId, newStatus) {
+        fetch(`/kanban/${taskId}/update-status/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCsrfToken(),
+            },
+            body: JSON.stringify({ status: newStatus }),
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showToast('Task moved successfully!');
+            } else {
+                showToast('Error: ' + data.error);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showToast('Something went wrong.');
+        });
+    }
+</script>
+
+<!-- Hidden CSRF token for JS to read -->
+{% csrf_token %}
+
+</body>
+</html>

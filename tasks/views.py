@@ -21,6 +21,15 @@ class TaskListView(LoginRequiredMixin, ListView):
     def get_queryset(self):
         queryset = Task.objects.filter(user=self.request.user)
 
+         # ── Search ──────────────────────────────────────
+        search_query = self.request.GET.get('q')
+        if search_query:
+            queryset = queryset.filter(
+                Q(title__icontains=search_query) |
+                Q(description__icontains=search_query) |
+                Q(category__name__icontains=search_query)
+            )
+
         # Filter by status
         status = self.request.GET.get('status')
         if status:
@@ -41,6 +50,7 @@ class TaskListView(LoginRequiredMixin, ListView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['categories'] = Category.objects.filter(user=self.request.user)
+        context['search_query'] = self.request.GET.get('q', '')
         return context
 
 

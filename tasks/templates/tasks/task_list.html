@@ -126,6 +126,22 @@
             transition: border-color 0.2s;
         }
 
+        .search-input {
+            flex: 1;
+            min-width: 180px;
+            padding: 0.5rem 0.85rem;
+            border: 2px solid #e1e5e9;
+            border-radius: 7px;
+            font-size: 0.875rem;
+            outline: none;
+            font-family: inherit;
+            transition: border-color 0.2s;
+        }
+
+.search-input:focus {
+    border-color: #4f46e5;
+}
+
         .filter-bar select:focus { border-color: #4f46e5; }
 
         .btn-filter {
@@ -305,6 +321,14 @@
 
     <!-- Filter Bar -->
     <form method="GET" class="filter-bar">
+        <input
+                type="text"
+                name="q"
+                class="search-input"
+                placeholder="🔍 Search tasks..."
+                value="{{ search_query }}"
+        >
+
         <select name="status">
             <option value="">All Statuses</option>
             <option value="todo"        {% if request.GET.status == 'todo' %}selected{% endif %}>To Do</option>
